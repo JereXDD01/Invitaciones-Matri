@@ -1,0 +1,104 @@
+[
+  {
+    "id": "sandra-alvarado",
+    "groupName": "Sandra Alvarado",
+    "createdAt": "2026-07-25T22:24:42.875Z",
+    "guests": [
+      {
+        "id": "1785018282875-0",
+        "name": "Sandra Alvarado",
+        "type": "adult",
+        "attendance": ""
+      },
+      {
+        "id": "1785018282875-1",
+        "name": "Agustín Besamer",
+        "type": "child",
+        "attendance": ""
+      }
+    ],
+    "dietary": "",
+    "submittedAt": ""
+  },
+  {
+    "id": "familia-barrales-alvarado",
+    "groupName": "Familia Barrales Alvarado",
+    "createdAt": "2026-07-25T22:20:19.534Z",
+    "guests": [
+      {
+        "id": "1785018019534-0",
+        "name": "Olga Alvarado",
+        "attendance": "yes"
+      },
+      {
+        "id": "1785018103971-1",
+        "name": "Hernán Felipe",
+        "attendance": "yes"
+      },
+      {
+        "id": "1785018103971-2",
+        "name": "Benjamín Barrales",
+        "attendance": "yes"
+      }
+    ],
+    "dietary": "",
+    "submittedAt": "2026-07-25T22:56:41.811Z"
+  },
+  {
+    "id": "familia-perez",
+    "groupName": "Familia Pérez",
+    "createdAt": "2026-07-25T18:00:00.000Z",
+    "guests": [
+      {
+        "id": "1",
+        "name": "Juan Pérez",
+        "attendance": "yes"
+      },
+      {
+        "id": "2",
+        "name": "María de Pérez",
+        "attendance": "yes"
+      },
+      {
+        "id": "3",
+        "name": "Pedrito Pérez",
+        "attendance": "yes"
+      }
+    ],
+    "dietary": "",
+    "submittedAt": "2026-07-25T22:11:47.478Z"
+  },
+  {
+    "id": "carlos-lopez",
+    "groupName": "Carlos López",
+    "createdAt": "2026-07-25T18:05:00.000Z",
+    "guests": [
+      {
+        "id": "4",
+        "name": "Carlos López",
+        "attendance": ""
+      }
+    ],
+    "dietary": "",
+    "submittedAt": ""
+  },
+  {
+    "id": "familia-gomez",
+    "groupName": "Familia Gómez",
+    "createdAt": "2026-07-25T18:08:00.000Z",
+    "guests": [
+      {
+        "id": "5",
+        "name": "Roberto Gómez",
+        "attendance": "yes"
+      },
+      {
+        "id": "6",
+        "name": "Ana María Gómez",
+        "attendance": "yes"
+      }
+    ],
+    "dietary": "Ana María es vegetariana",
+    "submittedAt": "2026-07-25T18:12:00.000Z"
+  }
+]
