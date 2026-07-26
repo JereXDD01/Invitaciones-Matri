@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-
-const dataFilePath = path.join(process.cwd(), 'src/data/invitations.json');
+import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 
 export interface Guest {
   id: string;
@@ -20,37 +18,17 @@ export interface Invitation {
   submittedAt?: string;
 }
 
-function readInvitations(): Invitation[] {
-  try {
-    if (!fs.existsSync(dataFilePath)) {
-      return [];
-    }
-    const fileData = fs.readFileSync(dataFilePath, 'utf8');
-    return JSON.parse(fileData);
-  } catch (error) {
-    console.error('Error reading invitations:', error);
-    return [];
-  }
-}
-
-function writeInvitations(invitations: Invitation[]): boolean {
-  try {
-    const dir = path.dirname(dataFilePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(dataFilePath, JSON.stringify(invitations, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error writing invitations:', error);
-    return false;
-  }
-}
-
 // GET /api/invitations -> returns all invitations
 export async function GET() {
-  const invitations = readInvitations();
-  return NextResponse.json(invitations);
+  try {
+    const q = query(collection(db, 'invitations'), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    const invitations = snapshot.docs.map(doc => doc.data() as Invitation);
+    return NextResponse.json(invitations);
+  } catch (error) {
+    console.error('Error fetching invitations from Firebase:', error);
+    return NextResponse.json({ error: 'Error al obtener las invitaciones' }, { status: 500 });
+  }
 }
 
 // POST /api/invitations -> create a new invitation
@@ -68,8 +46,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const invitations = readInvitations();
-
     // Create slug ID if not provided
     let slug = id
       ? id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-')
@@ -79,10 +55,14 @@ export async function POST(request: Request) {
       slug = `invitacion-${Date.now()}`;
     }
 
-    // Ensure unique slug
+    // Ensure unique slug: we need to get existing slugs first to prevent collision, 
+    // or we can just try to see if it exists. Since we need to get all to check:
+    const snapshot = await getDocs(collection(db, 'invitations'));
+    const existingIds = snapshot.docs.map(doc => doc.id);
+
     let finalSlug = slug;
     let counter = 1;
-    while (invitations.some(inv => inv.id === finalSlug)) {
+    while (existingIds.includes(finalSlug)) {
       finalSlug = `${slug}-${counter}`;
       counter++;
     }
@@ -101,8 +81,8 @@ export async function POST(request: Request) {
       submittedAt: '',
     };
 
-    invitations.unshift(newInvitation);
-    writeInvitations(invitations);
+    // Save to Firebase
+    await setDoc(doc(db, 'invitations', finalSlug), newInvitation);
 
     return NextResponse.json(newInvitation, { status: 201 });
   } catch (error) {
@@ -121,9 +101,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID es requerido' }, { status: 400 });
     }
 
-    let invitations = readInvitations();
-    invitations = invitations.filter(inv => inv.id !== id);
-    writeInvitations(invitations);
+    await deleteDoc(doc(db, 'invitations', id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

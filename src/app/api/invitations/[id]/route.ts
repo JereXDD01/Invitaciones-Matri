@@ -1,45 +1,26 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-
-const dataFilePath = path.join(process.cwd(), 'src/data/invitations.json');
-
-function readInvitations() {
-  try {
-    if (!fs.existsSync(dataFilePath)) return [];
-    return JSON.parse(fs.readFileSync(dataFilePath, 'utf8'));
-  } catch (error) {
-    console.error('Error reading file:', error);
-    return [];
-  }
-}
-
-function writeInvitations(invitations: any[]) {
-  try {
-    const dir = path.dirname(dataFilePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(dataFilePath, JSON.stringify(invitations, null, 2), 'utf8');
-    return true;
-  } catch (error) {
-    console.error('Error writing file:', error);
-    return false;
-  }
-}
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 
 // GET /api/invitations/[id]
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const invitations = readInvitations();
-  const invitation = invitations.find((inv: any) => inv.id === id);
+  try {
+    const { id } = await params;
+    const docRef = doc(db, 'invitations', id);
+    const docSnap = await getDoc(docRef);
 
-  if (!invitation) {
-    return NextResponse.json({ error: 'Invitación no encontrada' }, { status: 404 });
+    if (!docSnap.exists()) {
+      return NextResponse.json({ error: 'Invitación no encontrada' }, { status: 404 });
+    }
+
+    return NextResponse.json(docSnap.data());
+  } catch (error) {
+    console.error('Error fetching invitation:', error);
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
-
-  return NextResponse.json(invitation);
 }
 
 // PUT /api/invitations/[id] -> Update invitation details or RSVP status
@@ -52,14 +33,14 @@ export async function PUT(
     const body = await request.json();
     const { groupName, guestItems, guestNames, attendance, dietary, newSlug } = body;
 
-    const invitations = readInvitations();
-    const index = invitations.findIndex((inv: any) => inv.id === id);
+    const docRef = doc(db, 'invitations', id);
+    const docSnap = await getDoc(docRef);
 
-    if (index === -1) {
+    if (!docSnap.exists()) {
       return NextResponse.json({ error: 'Invitación no encontrada' }, { status: 404 });
     }
 
-    const invitation = invitations[index];
+    const invitation = docSnap.data() as any;
 
     // Case 1: RSVP submit from client guest invitation page
     if (attendance && typeof attendance === 'object') {
@@ -98,17 +79,29 @@ export async function PUT(
 
       if (dietary !== undefined) invitation.dietary = dietary;
 
-      // Handle slug change if provided
-      if (newSlug && newSlug.trim() !== id) {
-        const cleanSlug = newSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-        if (!invitations.some((inv: any) => inv.id === cleanSlug && inv.id !== id)) {
-          invitation.id = cleanSlug;
+      // Handle Slug change
+      if (newSlug && newSlug !== id) {
+        invitation.id = newSlug;
+        
+        // If the slug changed, we must create a new document and delete the old one
+        const newDocRef = doc(db, 'invitations', newSlug);
+        const newDocSnap = await getDoc(newDocRef);
+        
+        if (newDocSnap.exists()) {
+           return NextResponse.json({ error: 'El identificador ya está en uso por otra invitación.' }, { status: 400 });
         }
+        
+        await setDoc(newDocRef, invitation);
+        // We can't use deleteDoc imported? Wait, I didn't import deleteDoc. I need to import it.
+        const { deleteDoc } = require('firebase/firestore');
+        await deleteDoc(docRef);
+        
+        return NextResponse.json(invitation);
       }
     }
 
-    invitations[index] = invitation;
-    writeInvitations(invitations);
+    // Update the existing document
+    await updateDoc(docRef, invitation);
 
     return NextResponse.json(invitation);
   } catch (error) {
