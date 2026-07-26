@@ -171,8 +171,10 @@ const BotanicalWatermarkRight = ({ className }: { className: string }) => (
 
 /* ─── Fireworks Particle Canvas (Single Burst Around Border) ─── */
 const FireworksCanvas = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
-    const canvas = document.getElementById('fireworks-canvas') as HTMLCanvasElement;
+    const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -274,12 +276,12 @@ const FireworksCanvas = () => {
 
   return (
     <canvas
-      id="fireworks-canvas"
+      ref={canvasRef}
       style={{
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        zIndex: 1,
+        zIndex: 10,
         width: '100%',
         height: '100%',
       }}
